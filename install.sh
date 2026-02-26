@@ -153,14 +153,15 @@ install_packages() {
     
     log_info "Installing ${#PACKAGES[@]} packages..."
     
-    for PKG in "${PACKAGES[@]}"; do
-        log_info "Installing $PKG..."
-        pkg install -y "$PKG" || {
-            log_warning "Failed to install $PKG, continuing..."
-        }
-    done
-    
-    log_success "Package installation complete!"
+    if pkg install -y "${PACKAGES[@]}"; then
+        log_success "All packages installed successfully!"
+    else
+        log_warning "Bulk installation failed. Falling back to individual installation..."
+        for PKG in "${PACKAGES[@]}"; do
+            log_info "Installing $PKG..."
+            pkg install -y "$PKG" || log_warning "Failed to install $PKG, continuing..."
+        done
+    fi
 }
 
 # ========================
@@ -182,7 +183,7 @@ verify_nodejs() {
     
     # Check Node.js version (need 18+)
     NODE_MAJOR=$(echo "$NODE_VER" | cut -d'v' -f2 | cut -d'.' -f1)
-    if [ "$NODE_MAJOR" -lt 18 ]; then
+    if [[ "$NODE_MAJOR" =~ ^[0-9]+$ ]] && [ "$NODE_MAJOR" -lt 18 ]; then
         log_warning "Node.js version < 18 may cause issues"
         log_info "Recommended: Node.js 20+ or 24+"
     fi
@@ -207,16 +208,16 @@ configure_termux() {
         termux-wake-lock
         log_success "Wake lock enabled"
     else
-        log_warning "termux-api not installed, skipping wake lock"
+        log_warning "termux-tools not installed, skipping wake lock"
     fi
     
-    # Configure bashrc
-    log_info "Configuring .bashrc..."
-    BASHRC="$HOME/.bashrc"
-    
-    # Add OpenClaw aliases if not present
-    if ! grep -q "# OpenClaw aliases" "$BASHRC" 2>/dev/null; then
-        cat >> "$BASHRC" << 'EOF'
+    # Configure aliases for both bash and zsh
+    log_info "Configuring aliases..."
+    for RC_FILE in "$HOME/.bashrc" "$HOME/.zshrc"; do
+        # Always create/append to .bashrc, but only append to .zshrc if it already exists
+        if [ "$RC_FILE" = "$HOME/.bashrc" ] || [ -f "$RC_FILE" ]; then
+            if ! grep -q "# OpenClaw aliases" "$RC_FILE" 2>/dev/null; then
+                cat >> "$RC_FILE" << 'EOF'
 
 # OpenClaw aliases
 alias oa='openclaw'
@@ -228,15 +229,17 @@ alias claw-stop='openclaw gateway stop'
 
 # Node.js memory optimization for Android
 export NODE_OPTIONS="--max-old-space-size=4096"
-
-# Better prompt
-export PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-
 EOF
-        log_success "Added OpenClaw aliases to .bashrc"
-    else
-        log_info "Aliases already configured"
-    fi
+                # Only add PS1 prompt to bashrc, as zsh uses different prompt syntax (PROMPT=)
+                if [ "$RC_FILE" = "$HOME/.bashrc" ]; then
+                    echo "export PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '" >> "$RC_FILE"
+                fi
+                log_success "Added OpenClaw aliases to $(basename "$RC_FILE")"
+            else
+                log_info "Aliases already configured in $(basename "$RC_FILE")"
+            fi
+        fi
+    done
     
     # Create workspace directory
     mkdir -p "$HOME/.openclaw/workspace"
