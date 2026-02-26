@@ -1,0 +1,446 @@
+#!/bin/bash
+#
+# ██████╗ ███╗   ██╗ ██████╗ ██████╗ ███████╗██╗     ███████╗
+# ██╔═══██╗████╗  ██║██╔════╝██╔═══██╗██╔════╝██║     ██╔════╝
+# ██║   ██║██╔██╗ ██║██║     ██║   ██║█████╗  ██║     █████╗  
+# ██║   ██║██║╚██╗██║██║     ██║   ██║██╔══╝  ██║     ██╔══╝  
+# ╚██████╔╝██║ ╚████║╚██████╗╚██████╔╝███████╗███████╗███████╗
+#  ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ╚══════╝╚══════╝╚══════╝
+#                                                             
+#            OpenClaw Android/Termux Installer v1.0
+#            Easiest way to run OpenClaw on Android
+#
+# ============================================================
+# USAGE: curl -sL https://raw.githubusercontent.com/Vamsiindigu/Openclaw-on-android/main/install.sh | bash
+# ============================================================
+
+set -e  # Exit on error
+
+# ========================
+# COLOR CODES
+# ========================
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# ========================
+# HELPER FUNCTIONS
+# ========================
+print_banner() {
+    echo -e "${CYAN}"
+    echo "██████╗ ███╗   ██╗ ██████╗ ██████╗ ███████╗██╗     ███████╗"
+    echo "██╔═══██╗████╗  ██║██╔════╝██╔═══██╗██╔════╝██║     ██╔════╝"
+    echo "██║   ██║██╔██╗ ██║██║     ██║   ██║█████╗  ██║     █████╗  "
+    echo "██║   ██║██║╚██╗██║██║     ██║   ██║██╔══╝  ██║     ██╔══╝  "
+    echo "╚██████╔╝██║ ╚████║╚██████╗╚██████╔╝███████╗███████╗███████╗"
+    echo " ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ╚══════╝╚══════╝╚══════╝"
+    echo -e "${NC}"
+    echo -e "${BOLD}        OpenClaw Android/Termux Installer v1.0${NC}"
+    echo -e "${YELLOW}        Easiest way to run OpenClaw on Android${NC}"
+    echo ""
+}
+
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_step() {
+    echo ""
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}$1${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+}
+
+check_command() {
+    if command -v "$1" &> /dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# ========================
+# PRE-FLIGHT CHECKS
+# ========================
+preflight_checks() {
+    log_step "🔍 PRE-FLIGHT CHECKS"
+    
+    # Check if running in Termux
+    if [ -z "$TERMUX_VERSION" ]; then
+        log_error "This script must be run in Termux!"
+        log_info "Install Termux from F-Droid: https://f-droid.org/packages/com.termux/"
+        exit 1
+    fi
+    log_success "Running in Termux v$TERMUX_VERSION"
+    
+    # Check architecture
+    ARCH=$(uname -m)
+    if [ "$ARCH" != "aarch64" ] && [ "$ARCH" != "arm64" ]; then
+        log_warning "Architecture: $ARCH (not officially tested)"
+    else
+        log_success "Architecture: $ARCH (ARM64 supported)"
+    fi
+    
+    # Check Android version
+    ANDROID_VER=$(getprop ro.build.version.release 2>/dev/null || echo "unknown")
+    log_info "Android version: $ANDROID_VER"
+    
+    # Check available storage
+    STORAGE_AVAIL=$(df -h "$HOME" | awk 'NR==2 {print $4}')
+    log_info "Available storage: $STORAGE_AVAIL"
+    
+    # Check if node is already installed
+    if check_command node; then
+        NODE_VER=$(node -v)
+        log_info "Node.js already installed: $NODE_VER"
+    fi
+    
+    log_success "Pre-flight checks passed!"
+}
+
+# ========================
+# PACKAGE INSTALLATION
+# ========================
+install_packages() {
+    log_step "📦 INSTALLING PACKAGES"
+    
+    # Update package lists
+    log_info "Updating package lists..."
+    pkg update -y || {
+        log_error "Failed to update package lists"
+        log_info "Try running: pkg update && pkg upgrade"
+        exit 1
+    }
+    
+    # Required packages
+    PACKAGES=(
+        "nodejs"
+        "git"
+        "curl"
+        "wget"
+        "python"
+        "build-essential"
+        "binutils"
+        "libjpeg-turbo"
+        "libpng"
+        "zlib"
+        "openssl"
+        "openssh"
+        "tmux"
+        "nano"
+        "vim"
+        "jq"
+        "fzf"
+        "ripgrep"
+        "fd"
+    )
+    
+    log_info "Installing ${#PACKAGES[@]} packages..."
+    
+    for PKG in "${PACKAGES[@]}"; do
+        log_info "Installing $PKG..."
+        pkg install -y "$PKG" || {
+            log_warning "Failed to install $PKG, continuing..."
+        }
+    done
+    
+    log_success "Package installation complete!"
+}
+
+# ========================
+# NODE.JS VERIFICATION
+# ========================
+verify_nodejs() {
+    log_step "🔷 VERIFYING NODE.JS"
+    
+    if ! check_command node; then
+        log_error "Node.js installation failed!"
+        exit 1
+    fi
+    
+    NODE_VER=$(node -v)
+    NPM_VER=$(npm -v)
+    
+    log_success "Node.js: $NODE_VER"
+    log_success "npm: $NPM_VER"
+    
+    # Check Node.js version (need 18+)
+    NODE_MAJOR=$(echo "$NODE_VER" | cut -d'v' -f2 | cut -d'.' -f1)
+    if [ "$NODE_MAJOR" -lt 18 ]; then
+        log_warning "Node.js version < 18 may cause issues"
+        log_info "Recommended: Node.js 20+ or 24+"
+    fi
+    
+    # Configure npm for Termux
+    log_info "Configuring npm for Termux..."
+    npm config set python python3
+    npm config set scripts-prepend-node-path true
+    
+    log_success "Node.js ready!"
+}
+
+# ========================
+# TERMUX CONFIGURATION
+# ========================
+configure_termux() {
+    log_step "⚙️ CONFIGURING TERMUX"
+    
+    # Enable wake lock to prevent background kills
+    log_info "Enabling wake lock..."
+    if command -v termux-wake-lock &> /dev/null; then
+        termux-wake-lock
+        log_success "Wake lock enabled"
+    else
+        log_warning "termux-api not installed, skipping wake lock"
+    fi
+    
+    # Configure bashrc
+    log_info "Configuring .bashrc..."
+    BASHRC="$HOME/.bashrc"
+    
+    # Add OpenClaw aliases if not present
+    if ! grep -q "# OpenClaw aliases" "$BASHRC" 2>/dev/null; then
+        cat >> "$BASHRC" << 'EOF'
+
+# OpenClaw aliases
+alias oa='openclaw'
+alias ocl='openclaw'
+alias jarvis='openclaw chat'
+alias claw-status='openclaw status'
+alias claw-start='openclaw gateway start'
+alias claw-stop='openclaw gateway stop'
+
+# Node.js memory optimization for Android
+export NODE_OPTIONS="--max-old-space-size=4096"
+
+# Better prompt
+export PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+
+EOF
+        log_success "Added OpenClaw aliases to .bashrc"
+    else
+        log_info "Aliases already configured"
+    fi
+    
+    # Create workspace directory
+    mkdir -p "$HOME/.openclaw/workspace"
+    log_success "Created workspace: ~/.openclaw/workspace"
+    
+    log_success "Termux configuration complete!"
+}
+
+# ========================
+# OPENCLAW INSTALLATION
+# ========================
+install_openclaw() {
+    log_step "🚀 INSTALLING OPENCLAW"
+    
+    log_info "Installing OpenClaw from npm..."
+    
+    # Try installation with retry logic
+    MAX_RETRIES=3
+    RETRY_COUNT=0
+    
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        log_info "Attempt $RETRY_COUNT of $MAX_RETRIES..."
+        
+        if npm install -g openclaw; then
+            log_success "OpenClaw installed successfully!"
+            break
+        else
+            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+                log_error "Failed to install OpenClaw after $MAX_RETRIES attempts"
+                log_info "Try manually: npm install -g openclaw --verbose"
+                exit 1
+            fi
+            log_warning "Installation failed, retrying in 5 seconds..."
+            sleep 5
+        fi
+    done
+    
+    # Verify installation
+    if ! check_command openclaw; then
+        log_error "OpenClaw command not found in PATH"
+        exit 1
+    fi
+    
+    OCL_VER=$(openclaw --version 2>/dev/null || echo "unknown")
+    log_success "OpenClaw version: $OCL_VER"
+    
+    # Show available commands
+    log_info "Available commands:"
+    echo "  openclaw          - Main CLI"
+    echo "  openclaw init     - Initialize configuration"
+    echo "  openclaw status   - Check system status"
+    echo "  openclaw gateway  - Manage gateway server"
+    echo "  openclaw chat     - Start interactive chat"
+    echo "  openclaw --help   - Show all commands"
+    
+    log_success "OpenClaw installation complete!"
+}
+
+# ========================
+# SETUP WIZARD
+# ========================
+run_setup_wizard() {
+    log_step "🧙 SETUP WIZARD"
+    
+    echo ""
+    log_info "Would you like to run the initial setup? (y/n)"
+    read -p "> " RUN_SETUP < /dev/tty
+    
+    if [ "$RUN_SETUP" = "y" ] || [ "$RUN_SETUP" = "Y" ]; then
+        log_info "Running 'openclaw init'..."
+        openclaw init
+        log_success "Initial setup complete!"
+    else
+        log_info "Skipping initial setup. Run 'openclaw init' later."
+    fi
+    
+    echo ""
+    log_info "Would you like to configure a Telegram bot? (y/n)"
+    read -p "> " SETUP_TELEGRAM < /dev/tty
+    
+    if [ "$SETUP_TELEGRAM" = "y" ] || [ "$SETUP_TELEGRAM" = "Y" ]; then
+        log_info "Starting Telegram bot setup..."
+        log_info "You'll need a bot token from @BotFather"
+        openclaw telegram setup
+    else
+        log_info "Skipping Telegram setup. Configure later with 'openclaw telegram setup'"
+    fi
+}
+
+# ========================
+# BROWSER EXTENSION INFO
+# ========================
+show_browser_info() {
+    log_step "🌐 BROWSER EXTENSION SETUP"
+    
+    echo ""
+    log_info "For browser automation, install the OpenClaw Browser Extension:"
+    echo ""
+    echo "  1. Install Lemur Browser (or Kiwi Browser) from Play Store"
+    echo "  2. Download extension from:"
+    echo "     ${CYAN}https://github.com/openclaw/openclaw/tree/main/packages/browser-extension${NC}"
+    echo "  3. Load unpacked extension in browser"
+    echo "  4. Configure gateway port (default: 18792)"
+    echo ""
+    log_info "Lemur Browser supports Chrome extensions on Android!"
+    echo "  Play Store: com.lemurbrowser.exts"
+    echo ""
+}
+
+# ========================
+# FINAL SUMMARY
+# ========================
+show_summary() {
+    log_step "✅ INSTALLATION COMPLETE!"
+    
+    echo ""
+    echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║            OpenClaw is ready to use!                       ║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${BOLD}Quick Start Commands:${NC}"
+    echo ""
+    echo "  ${CYAN}openclaw status${NC}      - Check system status"
+    echo "  ${CYAN}openclaw init${NC}        - Run initial setup"
+    echo "  ${CYAN}openclaw gateway start${NC} - Start the gateway server"
+    echo "  ${CYAN}openclaw chat${NC}        - Start interactive chat"
+    echo "  ${CYAN}openclaw --help${NC}      - Show all commands"
+    echo ""
+    echo -e "${BOLD}Aliases (added to .bashrc):${NC}"
+    echo ""
+    echo "  ${CYAN}oa${NC}  = openclaw"
+    echo "  ${CYAN}ocl${NC} = openclaw"
+    echo "  ${CYAN}jarvis${NC} = openclaw chat"
+    echo ""
+    echo -e "${BOLD}Useful Links:${NC}"
+    echo ""
+    echo "  📖 Docs:   https://docs.openclaw.ai"
+    echo "  🐙 GitHub: https://github.com/openclaw/openclaw"
+    echo "  💬 Discord: https://discord.gg/clawd"
+    echo "  🛒 Skills:  https://clawhub.com"
+    echo ""
+    echo -e "${YELLOW}Tip: Run 'source ~/.bashrc' to activate aliases now!${NC}"
+    echo ""
+}
+
+# ========================
+# ERROR HANDLER
+# ========================
+show_troubleshooting() {
+    echo ""
+    echo -e "${RED}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${RED}║                  TROUBLESHOOTING GUIDE                     ║${NC}"
+    echo -e "${RED}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${BOLD}Common Issues:${NC}"
+    echo ""
+    echo "1. ${YELLOW}npm install fails${NC}"
+    echo "   → Try: pkg upgrade && npm cache clean --force"
+    echo ""
+    echo "2. ${YELLOW}Node.js memory error${NC}"
+    echo "   → Already configured with NODE_OPTIONS"
+    echo "   → Check: echo \$NODE_OPTIONS"
+    echo ""
+    echo "3. ${YELLOW}Gateway won't start${NC}"
+    echo "   → Check if port is in use: lsof -i :18789"
+    echo "   → Kill process: kill -9 <PID>"
+    echo ""
+    echo "4. ${YELLOW}Termux killed in background${NC}"
+    echo "   → Enable wake lock: termux-wake-lock"
+    echo "   → Disable battery optimization for Termux"
+    echo ""
+    echo "5. ${YELLOW}Permission denied${NC}"
+    echo "   → Run: termux-setup-storage"
+    echo "   → Then: curl -sL ... | bash"
+    echo ""
+    echo -e "${BOLD}Get Help:${NC}"
+    echo "  Discord: https://discord.gg/clawd"
+    echo "  Docs: https://docs.openclaw.ai"
+    echo ""
+}
+
+# ========================
+# MAIN EXECUTION
+# ========================
+main() {
+    # Clear screen and show banner
+    clear
+    print_banner
+    
+    # Run all steps
+    preflight_checks
+    install_packages
+    verify_nodejs
+    configure_termux
+    install_openclaw
+    run_setup_wizard
+    show_browser_info
+    show_summary
+    
+    log_success "Installation completed successfully!"
+    log_info "Restart Termux or run 'source ~/.bashrc' to apply changes."
+}
+
+# Run with error handling
+trap 'log_error "Installation failed at line $LINENO"; show_troubleshooting' ERR
+main "$@"
