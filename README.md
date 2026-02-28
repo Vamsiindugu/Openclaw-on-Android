@@ -148,13 +148,24 @@ For browser automation on Android, use **Lemur Browser** or **Kiwi Browser** (th
 ### Setup Steps
 
 1. Install **Lemur Browser** from Play Store
-2. Download OpenClaw Browser Extension:
+2. Install the OpenClaw Browser Extension:
+   ```bash
+   openclaw browser extension install
+   openclaw browser extension path  # Shows installed path
    ```
-   https://github.com/openclaw/openclaw/tree/main/packages/browser-extension
-   ```
-3. Enable developer mode in `chrome://extensions`
-4. Load unpacked extension
-5. Configure gateway port (default: `gateway_port + 3`)
+3. In Lemur Browser, go to `chrome://extensions`
+4. Enable **Developer mode** (toggle in top-right)
+5. Click **Load unpacked** → Select the extension directory
+6. Pin the extension for easy access
+7. Click the extension icon and configure:
+   - **Port**: `18792` (or `gateway_port + 3`)
+   - **Gateway Token**: Your token from `~/.openclaw/openclaw.json`
+
+### Usage
+
+- Open the tab you want to control
+- Click the extension icon (badge shows `ON` when attached)
+- OpenClaw can now control that tab
 
 ---
 
