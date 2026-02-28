@@ -57,7 +57,7 @@ OpenClaw is your **personal AI assistant** that runs locally on your device. Thi
 **One command. That's it.**
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Vamsiindigu/Openclaw-on-android/main/install.sh | bash
+curl -sL https://raw.githubusercontent.com/Vamsiindugu/openclaw-termux/main/install.sh | bash
 ```
 
 After installation:
@@ -96,7 +96,7 @@ https://f-droid.org/packages/com.termux/
 ### Step 2: Run Installer
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Vamsiindigu/Openclaw-on-android/main/install.sh | bash
+curl -sL https://raw.githubusercontent.com/Vamsiindugu/openclaw-termux/main/install.sh | bash
 ```
 
 ### Step 3: Initialize

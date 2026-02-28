@@ -11,7 +11,7 @@
 #            Easiest way to run OpenClaw on Android
 #
 # ============================================================
-# USAGE: curl -sL https://raw.githubusercontent.com/Vamsiindigu/Openclaw-on-android/main/install.sh | bash
+# USAGE: curl -sL https://raw.githubusercontent.com/Vamsiindugu/openclaw-termux/main/install.sh | bash
 # ============================================================
 
 set -e  # Exit on error
