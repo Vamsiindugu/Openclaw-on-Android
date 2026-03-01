@@ -19,7 +19,7 @@ set -e  # Exit on error
 # ========================
 # VERSION
 # ========================
-VERSION="1.1.0"
+VERSION="1.1.1"
 
 # ========================
 # COLOR CODES
@@ -158,16 +158,17 @@ install_packages() {
         }
     fi
     
-    # Required packages (FIXED: removed build-essential, added clang)
+    # Required packages (FIXED: added cmake for koffi native builds)
     PACKAGES=(
         "nodejs"
         "git"
         "curl"
         "wget"
         "python"
-        "clang"           # FIXED: Required for native npm builds
-        "make"            # FIXED: Build tool (replaces build-essential)
-        "pkg-config"      # FIXED: Required for some npm packages
+        "clang"           # Required for native npm builds
+        "cmake"           # FIXED: Required for koffi/native module builds
+        "make"            # Build tool
+        "pkg-config"      # Required for some npm packages
         "binutils"
         "libjpeg-turbo"
         "libpng"
@@ -477,7 +478,11 @@ show_troubleshooting() {
     echo ""
     echo -e "${BOLD}Common Issues:${NC}"
     echo ""
-    echo "1. ${YELLOW}npm install fails${NC}"
+    echo "1. ${YELLOW}npm install fails with 'cmake not found'${NC}"
+    echo "   → Install cmake: pkg install cmake"
+    echo "   → Then retry: npm install -g openclaw"
+    echo ""
+    echo "2. ${YELLOW}npm install fails (general)${NC}"
     echo "   → Try: pkg upgrade && npm cache clean --force"
     echo "   → Then: npm install -g openclaw --verbose"
     echo ""

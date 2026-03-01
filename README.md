@@ -239,6 +239,7 @@ Browse more: **https://clawhub.com**
 
 | Problem | Solution |
 |---------|----------|
+| **cmake not found (koffi build fails)** | Install cmake: `pkg install cmake` then retry |
 | **npm install fails** | Run `pkg upgrade && npm cache clean --force` |
 | **Memory error** | Check `echo $NODE_OPTIONS` (should show 4096) |
 | **Gateway won't start** | Check port: `lsof -i :18789` and kill process |
