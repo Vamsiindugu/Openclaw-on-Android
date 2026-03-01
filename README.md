@@ -54,9 +54,16 @@ OpenClaw is your **personal AI assistant** that runs locally on your device. Thi
 
 ## ⚡ Quick Start
 
-**One command. That's it.**
+**After installing Termux, run these commands:**
 
 ```bash
+# Step 1: Update Termux packages
+pkg update -y && pkg upgrade -y
+
+# Step 2: Install curl (required for one-liner)
+pkg install curl -y
+
+# Step 3: Run the one-liner installer
 curl -sL https://raw.githubusercontent.com/Vamsiindugu/Openclaw-on-Android/main/install.sh | bash
 ```
 
@@ -93,20 +100,27 @@ Download from F-Droid (recommended):
 https://f-droid.org/packages/com.termux/
 ```
 
-### Step 2: Run Installer
+### Step 2: Update Termux & Install curl
+
+```bash
+pkg update -y && pkg upgrade -y
+pkg install curl -y
+```
+
+### Step 3: Run Installer
 
 ```bash
 curl -sL https://raw.githubusercontent.com/Vamsiindugu/Openclaw-on-Android/main/install.sh | bash
 ```
 
-### Step 3: Initialize
+### Step 4: Initialize
 
 ```bash
 source ~/.bashrc
 openclaw init
 ```
 
-### Step 4: Start Gateway (Optional)
+### Step 5: Start Gateway (Optional)
 
 ```bash
 openclaw gateway start
