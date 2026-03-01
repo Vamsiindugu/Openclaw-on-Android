@@ -19,7 +19,7 @@ set -e  # Exit on error
 # ========================
 # VERSION
 # ========================
-VERSION="1.1.1"
+VERSION="1.1.2"
 
 # ========================
 # COLOR CODES
@@ -312,6 +312,10 @@ install_openclaw() {
     
     log_info "Installing OpenClaw from npm..."
     
+    # FIXED: Set JOBS=1 to prevent make -j error on Android/Termux
+    # The koffi native module build fails without this
+    export JOBS=1
+    
     # Try installation with retry logic
     MAX_RETRIES=3
     RETRY_COUNT=0
@@ -478,7 +482,11 @@ show_troubleshooting() {
     echo ""
     echo -e "${BOLD}Common Issues:${NC}"
     echo ""
-    echo "1. ${YELLOW}npm install fails with 'cmake not found'${NC}"
+    echo "1. ${YELLOW}make: -j option requires positive integer${NC}"
+    echo "   → This is fixed in the installer (JOBS=1 is set)"
+    echo "   → Manual fix: export JOBS=1 && npm install -g openclaw"
+    echo ""
+    echo "2. ${YELLOW}npm install fails with 'cmake not found'${NC}"
     echo "   → Install cmake: pkg install cmake"
     echo "   → Then retry: npm install -g openclaw"
     echo ""
